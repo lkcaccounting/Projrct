@@ -127,23 +127,19 @@
     display:flex;align-items:center;justify-content:center;
     font-family:var(--disp);font-weight:700;font-size:16px;
     background:var(--panel2);border:2px solid var(--border);color:var(--text);
-    transition:border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+    box-shadow:0 0 0 0 rgba(240,180,41,0);
+    transition:border-color 0.2s ease, color 0.2s ease, transform 0.3s cubic-bezier(0.34,1.4,0.4,1), box-shadow 0.3s ease;
   }
   .digit-col.is-max .circle{border-color:var(--green);color:var(--green);}
   .digit-col.is-min .circle{border-color:var(--red);color:var(--red);}
-  .digit-col.is-newest .circle{transform:scale(1.15);}
+  .digit-col.is-newest .circle{
+    transform:scale(1.2);
+    border-color:var(--accent);
+    color:var(--accent);
+    box-shadow:0 0 0 5px rgba(240,180,41,0.18);
+  }
 
   .count-label{font-size:10px;color:var(--muted2);}
-
-  .live-cursor{
-    position:absolute;top:0;left:0;width:52px;height:52px;
-    border-radius:50%;border:2.5px solid var(--accent);
-    box-shadow:0 0 0 5px rgba(240,180,41,0.10);
-    pointer-events:none;opacity:0;
-    transition:transform 0.35s cubic-bezier(0.34,1.2,0.4,1), opacity 0.2s ease;
-  }
-  .live-cursor.armed{opacity:1;}
-  .live-cursor.no-anim{transition:none;}
 
   .summary-row{
     display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;
@@ -227,7 +223,6 @@
   <div class="board">
     <div class="board-title">Last digit distribution — window of <span id="windowSizeLabel">500</span> ticks</div>
     <div class="digit-row" id="digitRow"></div>
-    <div class="live-cursor" id="liveCursor"></div>
   </div>
 
   <div class="summary-row">
@@ -336,8 +331,6 @@
   var lastDigitBadge = document.getElementById('lastDigitBadge');
   var bufferNote = document.getElementById('bufferNote');
   var digitRow = document.getElementById('digitRow');
-  var boardEl = document.querySelector('.board');
-  var liveCursor = document.getElementById('liveCursor');
   var mostIcon = document.getElementById('mostIcon');
   var mostValue = document.getElementById('mostValue');
   var leastIcon = document.getElementById('leastIcon');
@@ -402,31 +395,6 @@
     // Legacy semantics: pip_size is already the fractional pip value, e.g. 0.01
     return n;
   }
-
-  var cursorPositioned = false;
-  function moveCursorTo(idx, instant){
-    if (idx === null || idx === undefined) return;
-    var target = digitCols[idx].circle;
-    var boardRect = boardEl.getBoundingClientRect();
-    var targetRect = target.getBoundingClientRect();
-    var cx = targetRect.left - boardRect.left + targetRect.width / 2;
-    var cy = targetRect.top - boardRect.top + targetRect.height / 2;
-    if (instant || !cursorPositioned){
-      liveCursor.classList.add('no-anim');
-    } else {
-      liveCursor.classList.remove('no-anim');
-    }
-    liveCursor.style.transform = 'translate(' + (cx - 26) + 'px,' + (cy - 26) + 'px)';
-    liveCursor.classList.add('armed');
-    cursorPositioned = true;
-    if (instant || !cursorPositioned){
-      requestAnimationFrame(function(){ liveCursor.classList.remove('no-anim'); });
-    }
-  }
-  window.addEventListener('resize', function(){
-    var newest = digits.length ? mod10(digits[digits.length - 1]) : null;
-    if (newest !== null) moveCursorTo(newest, true);
-  });
 
   function digitFromPrice(price, pip){
     if (!pip) pip = 0.01;
@@ -595,8 +563,6 @@
     pipSize = symbolPipMap[code] || null;
     historyBackfillDone = false;
     bufferNote.textContent = 'Waiting for first tick…';
-    liveCursor.classList.remove('armed');
-    cursorPositioned = false;
     render();
     var sym = SYMBOLS.filter(function(s){ return s.code === code; })[0];
     symbolNameEl.textContent = sym ? sym.name : code;
@@ -668,10 +634,6 @@
       entry.col.classList.toggle('is-max', isMax);
       entry.col.classList.toggle('is-min', isMin);
       entry.col.classList.toggle('is-newest', d3 === newest);
-    }
-
-    if (newest !== null){
-      moveCursorTo(newest, !isLiveTick);
     }
 
     if (total && maxCount !== minCount){
