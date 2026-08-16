@@ -382,6 +382,7 @@
   var currentSymbol = null;
   var reqId = 1;
   var symbolFetchTimeout = null;
+  var historyBackfillDone = false;
 
   function setStatus(state, text){
     statusDot.className = 'brand-dot ' + state;
@@ -524,12 +525,22 @@
           useFallbackSymbols();
           return;
         }
+        var isBackfillError = data.echo_req && data.echo_req.ticks_history && !data.echo_req.subscribe;
+        if (isBackfillError){
+          historyBackfillDone = true;
+          if (digits.length > 0) return;
+        }
         var code = data.error.code ? (' [' + data.error.code + ']') : '';
         setStatus('down', (data.error.message || 'error') + code);
         return;
       }
 
       if (data.msg_type === 'history'){
+        if (historyBackfillDone || digits.length > 0){
+          historyBackfillDone = true;
+          return;
+        }
+        historyBackfillDone = true;
         pipSize = data.pip_size || pipSize || 0.01;
         var prices = (data.history && data.history.prices) || [];
         digits = [];
@@ -570,7 +581,8 @@
   function subscribeSymbol(code){
     digits = [];
     pipSize = symbolPipMap[code] || null;
-    bufferNote.textContent = 'Collecting tick history…';
+    historyBackfillDone = false;
+    bufferNote.textContent = 'Waiting for first tick…';
     liveCursor.classList.remove('armed');
     cursorPositioned = false;
     render();
@@ -580,6 +592,11 @@
       var forgetReq = { forget_all: 'ticks' };
       logSent(forgetReq);
       ws.send(JSON.stringify(forgetReq));
+
+      var liveReq = { ticks: code, subscribe: 1, req_id: reqId++ };
+      logSent(liveReq);
+      ws.send(JSON.stringify(liveReq));
+
       var histReq = {
         ticks_history: code,
         adjust_start_time: 1,
@@ -587,7 +604,6 @@
         end: 'latest',
         start: 1,
         style: 'ticks',
-        subscribe: 1,
         req_id: reqId++
       };
       logSent(histReq);
@@ -607,7 +623,9 @@
 
   function render(isLiveTick){
     var total = digits.length;
-    bufferNote.innerHTML = '<b>' + total + '</b> / ' + WINDOW_SIZE + ' ticks in window';
+    bufferNote.innerHTML = total >= WINDOW_SIZE
+      ? '<b>' + total + '</b> / ' + WINDOW_SIZE + ' ticks in window'
+      : '<b>' + total + '</b> / ' + WINDOW_SIZE + ' ticks — filling live (accumulates as new ticks arrive)';
 
     var counts = [0,0,0,0,0,0,0,0,0,0];
     for (var i = 0; i < total; i++) counts[digits[i]]++;
