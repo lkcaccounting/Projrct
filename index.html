@@ -215,6 +215,14 @@
       <div class="price-label">Symbol</div>
       <div class="price-value" id="symbolName" style="font-size:18px;">—</div>
     </div>
+    <div class="price-block">
+      <div class="price-label">Ticks received</div>
+      <div class="price-value" id="tickCounter" style="font-size:18px;">0</div>
+    </div>
+    <div class="price-block">
+      <div class="price-label">Last update</div>
+      <div class="price-value" id="lastUpdateAgo" style="font-size:18px;color:var(--muted);">—</div>
+    </div>
     <div class="last-digit-badge" id="lastDigitBadge">—</div>
   </div>
 
@@ -329,6 +337,8 @@
   var lastPriceEl = document.getElementById('lastPrice');
   var symbolNameEl = document.getElementById('symbolName');
   var lastDigitBadge = document.getElementById('lastDigitBadge');
+  var tickCounterEl = document.getElementById('tickCounter');
+  var lastUpdateAgoEl = document.getElementById('lastUpdateAgo');
   var bufferNote = document.getElementById('bufferNote');
   var digitRow = document.getElementById('digitRow');
   var mostIcon = document.getElementById('mostIcon');
@@ -376,6 +386,17 @@
   var reqId = 1;
   var symbolFetchTimeout = null;
   var historyBackfillDone = false;
+  var tickCount = 0;
+  var lastUpdateAt = null;
+
+  setInterval(function(){
+    if (lastUpdateAt === null){ lastUpdateAgoEl.textContent = '—'; return; }
+    var secs = Math.round((Date.now() - lastUpdateAt) / 1000);
+    if (secs < 2) lastUpdateAgoEl.textContent = 'just now';
+    else if (secs < 60) lastUpdateAgoEl.textContent = secs + 's ago';
+    else lastUpdateAgoEl.textContent = Math.round(secs / 60) + 'm ago';
+    lastUpdateAgoEl.style.color = secs > 15 ? 'var(--red)' : 'var(--muted)';
+  }, 1000);
 
   function setStatus(state, text){
     statusDot.className = 'brand-dot ' + state;
@@ -541,7 +562,7 @@
         var dgt = digitFromPrice(tick.quote, pipSize);
         digits.push(dgt);
         if (digits.length > WINDOW_SIZE) digits.shift();
-        updatePriceDisplay(tick.quote, pipSize);
+        updatePriceDisplay(tick.quote, pipSize, true);
         setStatus('live', 'live');
         render(true);
       }
@@ -562,6 +583,9 @@
     digits = [];
     pipSize = symbolPipMap[code] || null;
     historyBackfillDone = false;
+    tickCount = 0;
+    tickCounterEl.textContent = '0';
+    lastUpdateAt = null;
     bufferNote.textContent = 'Waiting for first tick…';
     render();
     var sym = SYMBOLS.filter(function(s){ return s.code === code; })[0];
@@ -589,7 +613,7 @@
     }
   }
 
-  function updatePriceDisplay(price, pip){
+  function updatePriceDisplay(price, pip, isLiveTick){
     var dec = decimalsFromPip(pip);
     lastPriceEl.textContent = Number(price).toFixed(dec);
     var d = digitFromPrice(price, pip);
@@ -597,6 +621,11 @@
     lastDigitBadge.classList.remove('flash');
     void lastDigitBadge.offsetWidth;
     lastDigitBadge.classList.add('flash');
+    if (isLiveTick){
+      tickCount++;
+      tickCounterEl.textContent = tickCount;
+      lastUpdateAt = Date.now();
+    }
   }
 
   function render(isLiveTick){
