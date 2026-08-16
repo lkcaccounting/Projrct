@@ -391,6 +391,18 @@
 
   function mod10(n){ return ((n % 10) + 10) % 10; }
 
+  function resolvePipFraction(raw){
+    if (raw === null || raw === undefined || raw === '') return null;
+    var n = Number(raw);
+    if (isNaN(n)) return null;
+    if (n >= 1){
+      // New API semantics: pip_size is the count of decimal places, e.g. 2 -> 0.01
+      return Math.pow(10, -Math.round(n));
+    }
+    // Legacy semantics: pip_size is already the fractional pip value, e.g. 0.01
+    return n;
+  }
+
   var cursorPositioned = false;
   function moveCursorTo(idx, instant){
     if (idx === null || idx === undefined) return;
@@ -511,7 +523,7 @@
         });
         SYMBOLS = list;
         symbolPipMap = {};
-        list.forEach(function(s){ if (s.pip) symbolPipMap[s.code] = s.pip; });
+        list.forEach(function(s){ var f = resolvePipFraction(s.pip); if (f) symbolPipMap[s.code] = f; });
         symbolsReady = true;
         populateDropdown(SYMBOLS);
         currentSymbol = SYMBOLS[0].code;
@@ -541,7 +553,7 @@
           return;
         }
         historyBackfillDone = true;
-        pipSize = data.pip_size || pipSize || 0.01;
+        pipSize = resolvePipFraction(data.pip_size) || pipSize || 0.01;
         var prices = (data.history && data.history.prices) || [];
         digits = [];
         for (var i = 0; i < prices.length; i++){
@@ -557,7 +569,7 @@
       if (data.msg_type === 'tick' && data.tick){
         var tick = data.tick;
         if (tick.symbol !== currentSymbol) return;
-        pipSize = tick.pip_size || pipSize || 0.01;
+        pipSize = resolvePipFraction(tick.pip_size) || pipSize || 0.01;
         var dgt = digitFromPrice(tick.quote, pipSize);
         digits.push(dgt);
         if (digits.length > WINDOW_SIZE) digits.shift();
