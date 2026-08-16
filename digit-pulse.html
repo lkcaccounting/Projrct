@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digit Pulse — Deriv Tick Digit Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0d10;
+    --panel:#11151a;
+    --panel2:#161c23;
+    --border:#232b34;
+    --text:#e7ebee;
+    --muted:#7d8794;
+    --muted2:#4d5761;
+    --accent:#f0b429;
+    --accent-dim:#7a5c1c;
+    --green:#16c784;
+    --green-dim:#0d5d3f;
+    --red:#ea3943;
+    --red-dim:#7a1f24;
+    --blue:#3a8ee0;
+    --mono:'JetBrains Mono', monospace;
+    --disp:'Space Grotesk', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--mono);
+    min-height:100vh;
+    padding:24px 16px 60px;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+
+  .topbar{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+    gap:14px;margin-bottom:22px;
+  }
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand-name{
+    font-family:var(--disp);font-weight:700;font-size:22px;letter-spacing:0.5px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .brand-dot{
+    width:9px;height:9px;border-radius:50%;background:var(--muted2);flex:none;
+    transition:background 0.2s;
+  }
+  .brand-dot.connecting{background:var(--accent);animation:pulse 1s infinite;}
+  .brand-dot.live{background:var(--green);}
+  .brand-dot.down{background:var(--red);}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .brand-sub{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+
+  .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  select{
+    background:var(--panel);color:var(--text);border:1px solid var(--border);
+    border-radius:6px;padding:9px 12px;font-family:var(--mono);font-size:13px;
+    font-weight:500;cursor:pointer;outline:none;
+  }
+  select:focus{border-color:var(--accent);}
+  .status-pill{
+    font-size:11px;color:var(--muted);border:1px solid var(--border);
+    border-radius:20px;padding:6px 12px;letter-spacing:0.5px;white-space:nowrap;
+  }
+
+  .price-strip{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:16px 20px;margin-bottom:18px;
+  }
+  .price-block{display:flex;flex-direction:column;gap:2px;}
+  .price-label{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+  .price-value{font-family:var(--disp);font-weight:700;font-size:26px;letter-spacing:0.5px;}
+  .last-digit-badge{
+    width:52px;height:52px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--disp);font-weight:700;font-size:24px;
+    background:var(--panel2);border:2px solid var(--accent);color:var(--accent);
+    transition:transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .last-digit-badge.flash{transform:scale(1.18);box-shadow:0 0 0 6px rgba(240,180,41,0.12);}
+
+  .buffer-note{
+    font-size:11px;color:var(--muted);text-align:center;margin:0 0 14px;
+    letter-spacing:0.3px;
+  }
+  .buffer-note b{color:var(--text);}
+
+  .board{
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:26px 18px 18px;margin-bottom:18px;position:relative;
+  }
+  .board-title{
+    font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;
+    margin-bottom:20px;padding:0 6px;
+  }
+  .digit-row{
+    display:grid;grid-template-columns:repeat(10,1fr);gap:8px;align-items:end;
+  }
+  .digit-col{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .pct-label{font-size:12px;font-weight:700;color:var(--muted);height:16px;}
+  .digit-col.is-max .pct-label{color:var(--green);}
+  .digit-col.is-min .pct-label{color:var(--red);}
+
+  .bar-track{
+    width:100%;max-width:46px;height:120px;
+    display:flex;align-items:flex-end;
+    background:var(--panel2);border-radius:5px;overflow:hidden;
+    border:1px solid var(--border);
+  }
+  .bar-fill{
+    width:100%;background:var(--blue);
+    border-radius:0;
+    transition:height 0.35s ease, background 0.2s ease;
+    height:0%;
+  }
+  .digit-col.is-max .bar-fill{background:var(--green);}
+  .digit-col.is-min .bar-fill{background:var(--red);}
+
+  .circle{
+    width:40px;height:40px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--disp);font-weight:700;font-size:16px;
+    background:var(--panel2);border:2px solid var(--border);color:var(--text);
+    transition:border-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  }
+  .digit-col.is-max .circle{border-color:var(--green);color:var(--green);}
+  .digit-col.is-min .circle{border-color:var(--red);color:var(--red);}
+  .digit-col.is-newest .circle{transform:scale(1.15);}
+
+  .count-label{font-size:10px;color:var(--muted2);}
+
+  .live-cursor{
+    position:absolute;top:0;left:0;width:52px;height:52px;
+    border-radius:50%;border:2.5px solid var(--accent);
+    box-shadow:0 0 0 5px rgba(240,180,41,0.10);
+    pointer-events:none;opacity:0;
+    transition:transform 0.35s cubic-bezier(0.34,1.2,0.4,1), opacity 0.2s ease;
+  }
+  .live-cursor.armed{opacity:1;}
+  .live-cursor.no-anim{transition:none;}
+
+  .summary-row{
+    display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;
+  }
+  .summary-card{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:14px 16px;display:flex;align-items:center;gap:12px;
+  }
+  .summary-card.most{border-color:var(--green-dim);}
+  .summary-card.least{border-color:var(--red-dim);}
+  .summary-icon{
+    width:38px;height:38px;border-radius:50%;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--disp);font-weight:700;font-size:16px;
+  }
+  .summary-card.most .summary-icon{background:rgba(22,199,132,0.12);color:var(--green);}
+  .summary-card.least .summary-icon{background:rgba(234,57,67,0.12);color:var(--red);}
+  .summary-text{display:flex;flex-direction:column;gap:1px;}
+  .summary-title{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+  .summary-value{font-size:15px;font-weight:700;}
+
+  .tape-panel{
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:14px 16px;
+  }
+  .tape-title{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;}
+  .tape{
+    display:flex;gap:6px;flex-wrap:wrap;
+  }
+  .tape-digit{
+    width:26px;height:26px;border-radius:5px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;background:var(--panel2);color:var(--muted);
+    border:1px solid var(--border);
+  }
+  .tape-digit.newest{background:var(--accent-dim);color:var(--accent);border-color:var(--accent);}
+
+  .footnote{
+    text-align:center;font-size:10px;color:var(--muted2);margin-top:20px;letter-spacing:0.3px;
+  }
+
+  @media (max-width:640px){
+    .digit-row{grid-template-columns:repeat(5,1fr);row-gap:20px;}
+    .price-value{font-size:20px;}
+    .summary-row{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-name"><span class="brand-dot" id="statusDot"></span>Digit Pulse</div>
+      <div class="brand-sub">Deriv tick digit analyzer</div>
+    </div>
+    <div class="controls">
+      <select id="symbolSelect"></select>
+      <input type="text" id="manualSymbolInput" placeholder="or type a symbol e.g. frxEURUSD" title="Manually test any symbol code, bypassing the dropdown" style="width:170px;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:9px 10px;font-family:var(--mono);font-size:13px;">
+      <button id="manualSymbolBtn" style="background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent);border-radius:6px;padding:9px 12px;font-family:var(--mono);font-size:13px;cursor:pointer;">Test</button>
+      <input type="text" id="appIdInput" value="1089" title="Deriv app_id" style="width:70px;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:9px 10px;font-family:var(--mono);font-size:13px;">
+      <input type="password" id="tokenInput" placeholder="API token (optional)" title="Personal Access Token — sent only to Deriv, only used to authorize this session" style="width:160px;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:9px 10px;font-family:var(--mono);font-size:13px;">
+      <span class="status-pill" id="statusPill">connecting…</span>
+    </div>
+  </div>
+
+  <div class="price-strip">
+    <div class="price-block">
+      <div class="price-label">Last quote</div>
+      <div class="price-value" id="lastPrice">—</div>
+    </div>
+    <div class="price-block">
+      <div class="price-label">Symbol</div>
+      <div class="price-value" id="symbolName" style="font-size:18px;">—</div>
+    </div>
+    <div class="last-digit-badge" id="lastDigitBadge">—</div>
+  </div>
+
+  <div class="buffer-note" id="bufferNote">Collecting tick history…</div>
+
+  <div class="board">
+    <div class="board-title">Last digit distribution — window of <span id="windowSizeLabel">500</span> ticks</div>
+    <div class="digit-row" id="digitRow"></div>
+    <div class="live-cursor" id="liveCursor"></div>
+  </div>
+
+  <div class="summary-row">
+    <div class="summary-card most">
+      <div class="summary-icon" id="mostIcon">—</div>
+      <div class="summary-text">
+        <div class="summary-title">Most frequent</div>
+        <div class="summary-value" id="mostValue">—</div>
+      </div>
+    </div>
+    <div class="summary-card least">
+      <div class="summary-icon" id="leastIcon">—</div>
+      <div class="summary-text">
+        <div class="summary-title">Least frequent</div>
+        <div class="summary-value" id="leastValue">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tape-panel">
+    <div class="tape-title">Recent digits (newest on the right)</div>
+    <div class="tape" id="tape"></div>
+  </div>
+
+  <div class="tape-panel" style="margin-top:12px;">
+    <div class="tape-title" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" id="diagToggle">
+      <span>Diagnostics (raw last request / response)</span>
+      <span id="diagChevron">show ▾</span>
+    </div>
+    <div id="diagBody" style="display:none;margin-top:10px;">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Last sent</div>
+      <pre id="diagSent" style="background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;overflow:auto;max-height:140px;margin:0 0 10px;white-space:pre-wrap;word-break:break-all;">—</pre>
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Last received</div>
+      <pre id="diagReceived" style="background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;overflow:auto;max-height:220px;margin:0;white-space:pre-wrap;word-break:break-all;">—</pre>
+    </div>
+  </div>
+
+  <div class="footnote">Live data via Deriv WebSocket API · not financial advice</div>
+</div>
+
+<script>
+(function(){
+  var WINDOW_SIZE = 500;
+  var appIdInput = document.getElementById('appIdInput');
+  var tokenInput = document.getElementById('tokenInput');
+  var WS_URL;
+  function buildWsUrl(){
+    var id = (appIdInput.value || '1089').trim();
+    return 'wss://ws.derivws.com/websockets/v3?app_id=' + encodeURIComponent(id);
+  }
+
+  var FALLBACK_SYMBOLS = [
+    {code:'R_10', name:'Volatility 10 Index'},
+    {code:'R_25', name:'Volatility 25 Index'},
+    {code:'R_50', name:'Volatility 50 Index'},
+    {code:'R_75', name:'Volatility 75 Index'},
+    {code:'R_100', name:'Volatility 100 Index'},
+    {code:'1HZ10V', name:'Volatility 10 (1s) Index'},
+    {code:'1HZ25V', name:'Volatility 25 (1s) Index'},
+    {code:'1HZ50V', name:'Volatility 50 (1s) Index'},
+    {code:'1HZ75V', name:'Volatility 75 (1s) Index'},
+    {code:'1HZ100V', name:'Volatility 100 (1s) Index'},
+    {code:'BOOM1000', name:'Boom 1000 Index'},
+    {code:'BOOM500', name:'Boom 500 Index'},
+    {code:'CRASH1000', name:'Crash 1000 Index'},
+    {code:'CRASH500', name:'Crash 500 Index'},
+    {code:'stpRNG', name:'Step Index'},
+    {code:'JD10', name:'Jump 10 Index'},
+    {code:'JD25', name:'Jump 25 Index'},
+    {code:'JD50', name:'Jump 50 Index'},
+    {code:'JD75', name:'Jump 75 Index'},
+    {code:'JD100', name:'Jump 100 Index'}
+  ];
+
+  var PREFERRED_ORDER = ['R_10','R_25','R_50','R_75','R_100','1HZ10V','1HZ15V','1HZ25V','1HZ30V','1HZ50V','1HZ75V','1HZ90V','1HZ100V','BOOM500','BOOM1000','CRASH500','CRASH1000','stpRNG','JD10','JD25','JD50','JD75','JD100'];
+
+  var SYMBOLS = [];
+  var symbolPipMap = {};
+  var symbolsReady = false;
+
+  var symbolSelect = document.getElementById('symbolSelect');
+
+  function populateDropdown(list){
+    symbolSelect.innerHTML = '';
+    list.forEach(function(s){
+      var opt = document.createElement('option');
+      opt.value = s.code;
+      opt.textContent = s.name;
+      symbolSelect.appendChild(opt);
+    });
+  }
+
+  function useFallbackSymbols(){
+    SYMBOLS = FALLBACK_SYMBOLS;
+    symbolsReady = true;
+    populateDropdown(SYMBOLS);
+    currentSymbol = SYMBOLS[0].code;
+    symbolNameEl.textContent = SYMBOLS[0].name;
+    subscribeSymbol(currentSymbol);
+  }
+
+  var statusDot = document.getElementById('statusDot');
+  var statusPill = document.getElementById('statusPill');
+  var lastPriceEl = document.getElementById('lastPrice');
+  var symbolNameEl = document.getElementById('symbolName');
+  var lastDigitBadge = document.getElementById('lastDigitBadge');
+  var bufferNote = document.getElementById('bufferNote');
+  var digitRow = document.getElementById('digitRow');
+  var boardEl = document.querySelector('.board');
+  var liveCursor = document.getElementById('liveCursor');
+  var mostIcon = document.getElementById('mostIcon');
+  var mostValue = document.getElementById('mostValue');
+  var leastIcon = document.getElementById('leastIcon');
+  var leastValue = document.getElementById('leastValue');
+  var tapeEl = document.getElementById('tape');
+  var diagToggle = document.getElementById('diagToggle');
+  var diagChevron = document.getElementById('diagChevron');
+  var diagBody = document.getElementById('diagBody');
+  var diagSent = document.getElementById('diagSent');
+  var diagReceived = document.getElementById('diagReceived');
+  diagToggle.addEventListener('click', function(){
+    var open = diagBody.style.display !== 'none';
+    diagBody.style.display = open ? 'none' : 'block';
+    diagChevron.textContent = open ? 'show ▾' : 'hide ▴';
+  });
+  function logSent(obj){ diagSent.textContent = JSON.stringify(obj, null, 2); }
+  function logReceived(obj){ diagReceived.textContent = JSON.stringify(obj, null, 2); }
+
+  var digitCols = [];
+  for (var d = 0; d < 10; d++){
+    var col = document.createElement('div');
+    col.className = 'digit-col';
+    col.innerHTML =
+      '<div class="pct-label">0%</div>' +
+      '<div class="bar-track"><div class="bar-fill"></div></div>' +
+      '<div class="circle">' + d + '</div>' +
+      '<div class="count-label">0</div>';
+    digitRow.appendChild(col);
+    digitCols.push({
+      pct: col.querySelector('.pct-label'),
+      fill: col.querySelector('.bar-fill'),
+      circle: col.querySelector('.circle'),
+      count: col.querySelector('.count-label'),
+      col: col
+    });
+  }
+
+  var ws = null;
+  var reconnectTimer = null;
+  var digits = [];
+  var pipSize = null;
+  var currentSymbol = null;
+  var reqId = 1;
+  var symbolFetchTimeout = null;
+
+  function setStatus(state, text){
+    statusDot.className = 'brand-dot ' + state;
+    statusPill.textContent = text;
+  }
+
+  function mod10(n){ return ((n % 10) + 10) % 10; }
+
+  var cursorPositioned = false;
+  function moveCursorTo(idx, instant){
+    if (idx === null || idx === undefined) return;
+    var target = digitCols[idx].circle;
+    var boardRect = boardEl.getBoundingClientRect();
+    var targetRect = target.getBoundingClientRect();
+    var cx = targetRect.left - boardRect.left + targetRect.width / 2;
+    var cy = targetRect.top - boardRect.top + targetRect.height / 2;
+    if (instant || !cursorPositioned){
+      liveCursor.classList.add('no-anim');
+    } else {
+      liveCursor.classList.remove('no-anim');
+    }
+    liveCursor.style.transform = 'translate(' + (cx - 26) + 'px,' + (cy - 26) + 'px)';
+    liveCursor.classList.add('armed');
+    cursorPositioned = true;
+    if (instant || !cursorPositioned){
+      requestAnimationFrame(function(){ liveCursor.classList.remove('no-anim'); });
+    }
+  }
+  window.addEventListener('resize', function(){
+    var newest = digits.length ? mod10(digits[digits.length - 1]) : null;
+    if (newest !== null) moveCursorTo(newest, true);
+  });
+
+  function digitFromPrice(price, pip){
+    if (!pip) pip = 0.01;
+    return mod10(Math.round(price / pip));
+  }
+
+  function decimalsFromPip(pip){
+    if (!pip) return 2;
+    var s = pip.toString();
+    if (s.indexOf('.') === -1) return 0;
+    return s.split('.')[1].length;
+  }
+
+  function connect(){
+    var idRaw = (appIdInput.value || '').trim();
+    if (!/^\d+$/.test(idRaw)){
+      setStatus('down', 'App ID must be numbers only (e.g. 1089) — check Manage Apps on developers.deriv.com');
+      return;
+    }
+    setStatus('connecting', 'connecting…');
+    ws = new WebSocket(buildWsUrl());
+
+    var openTimeout = setTimeout(function(){
+      if (ws && ws.readyState !== WebSocket.OPEN){
+        setStatus('down', 'connection timed out — check the App ID is correct and numeric');
+        try { ws.close(); } catch(e){}
+      }
+    }, 8000);
+
+    ws.onopen = function(){
+      clearTimeout(openTimeout);
+      var token = (tokenInput.value || '').trim();
+      if (token){
+        var authReq = { authorize: token, req_id: reqId++ };
+        logSent(authReq);
+        ws.send(JSON.stringify(authReq));
+        return;
+      }
+      afterAuth();
+    };
+
+    function afterAuth(){
+      if (!symbolsReady){
+        var req = { active_symbols: 'brief', req_id: reqId++ };
+        logSent(req);
+        ws.send(JSON.stringify(req));
+        symbolFetchTimeout = setTimeout(function(){
+          if (!symbolsReady) useFallbackSymbols();
+        }, 6000);
+      } else {
+        subscribeSymbol(currentSymbol);
+      }
+    }
+
+    ws.onmessage = function(evt){
+      var data;
+      try { data = JSON.parse(evt.data); } catch(e){ return; }
+      logReceived(data);
+
+      if (data.msg_type === 'authorize'){
+        if (data.error){
+          var acode = data.error.code ? (' [' + data.error.code + ']') : '';
+          setStatus('down', 'Authorize failed: ' + (data.error.message || 'error') + acode);
+          return;
+        }
+        setStatus('connecting', 'authorized, loading symbols…');
+        afterAuth();
+        return;
+      }
+
+      if (data.msg_type === 'active_symbols'){
+        clearTimeout(symbolFetchTimeout);
+        var raw = data.active_symbols || [];
+        var found = raw.filter(function(s){ return s.market === 'synthetic_index'; });
+        if (!found.length){
+          useFallbackSymbols();
+          return;
+        }
+        var list = found.map(function(s){
+          return {
+            code: s.underlying_symbol || s.symbol,
+            name: s.underlying_symbol_name || s.display_name || s.underlying_symbol || s.symbol,
+            pip: s.pip_size || s.pip,
+            group: s.submarket_display_name || s.submarket || ''
+          };
+        });
+        list.sort(function(a, b){
+          var ai = PREFERRED_ORDER.indexOf(a.code);
+          var bi = PREFERRED_ORDER.indexOf(b.code);
+          if (ai === -1) ai = 999;
+          if (bi === -1) bi = 999;
+          if (ai !== bi) return ai - bi;
+          return a.name.localeCompare(b.name);
+        });
+        SYMBOLS = list;
+        symbolPipMap = {};
+        list.forEach(function(s){ if (s.pip) symbolPipMap[s.code] = s.pip; });
+        symbolsReady = true;
+        populateDropdown(SYMBOLS);
+        currentSymbol = SYMBOLS[0].code;
+        symbolSelect.value = currentSymbol;
+        subscribeSymbol(currentSymbol);
+        return;
+      }
+
+      if (data.error){
+        if (!symbolsReady){
+          useFallbackSymbols();
+          return;
+        }
+        var code = data.error.code ? (' [' + data.error.code + ']') : '';
+        setStatus('down', (data.error.message || 'error') + code);
+        return;
+      }
+
+      if (data.msg_type === 'history'){
+        pipSize = data.pip_size || pipSize || 0.01;
+        var prices = (data.history && data.history.prices) || [];
+        digits = [];
+        for (var i = 0; i < prices.length; i++){
+          digits.push(digitFromPrice(prices[i], pipSize));
+        }
+        if (digits.length > WINDOW_SIZE) digits = digits.slice(digits.length - WINDOW_SIZE);
+        var lastPrice = prices[prices.length - 1];
+        if (lastPrice !== undefined) updatePriceDisplay(lastPrice, pipSize);
+        setStatus('live', 'live');
+        render();
+      }
+
+      if (data.msg_type === 'tick' && data.tick){
+        var tick = data.tick;
+        if (tick.symbol !== currentSymbol) return;
+        pipSize = tick.pip_size || pipSize || 0.01;
+        var dgt = digitFromPrice(tick.quote, pipSize);
+        digits.push(dgt);
+        if (digits.length > WINDOW_SIZE) digits.shift();
+        updatePriceDisplay(tick.quote, pipSize);
+        setStatus('live', 'live');
+        render(true);
+      }
+    };
+
+    ws.onerror = function(){
+      setStatus('down', 'connection error');
+    };
+
+    ws.onclose = function(){
+      setStatus('down', 'reconnecting…');
+      clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(connect, 3000);
+    };
+  }
+
+  function subscribeSymbol(code){
+    digits = [];
+    pipSize = symbolPipMap[code] || null;
+    bufferNote.textContent = 'Collecting tick history…';
+    liveCursor.classList.remove('armed');
+    cursorPositioned = false;
+    render();
+    var sym = SYMBOLS.filter(function(s){ return s.code === code; })[0];
+    symbolNameEl.textContent = sym ? sym.name : code;
+    if (ws && ws.readyState === WebSocket.OPEN){
+      var forgetReq = { forget_all: 'ticks' };
+      logSent(forgetReq);
+      ws.send(JSON.stringify(forgetReq));
+      var histReq = {
+        ticks_history: code,
+        adjust_start_time: 1,
+        count: WINDOW_SIZE,
+        end: 'latest',
+        start: 1,
+        style: 'ticks',
+        subscribe: 1,
+        req_id: reqId++
+      };
+      logSent(histReq);
+      ws.send(JSON.stringify(histReq));
+    }
+  }
+
+  function updatePriceDisplay(price, pip){
+    var dec = decimalsFromPip(pip);
+    lastPriceEl.textContent = Number(price).toFixed(dec);
+    var d = digitFromPrice(price, pip);
+    lastDigitBadge.textContent = d;
+    lastDigitBadge.classList.remove('flash');
+    void lastDigitBadge.offsetWidth;
+    lastDigitBadge.classList.add('flash');
+  }
+
+  function render(isLiveTick){
+    var total = digits.length;
+    bufferNote.innerHTML = '<b>' + total + '</b> / ' + WINDOW_SIZE + ' ticks in window';
+
+    var counts = [0,0,0,0,0,0,0,0,0,0];
+    for (var i = 0; i < total; i++) counts[digits[i]]++;
+
+    var maxCount = total ? Math.max.apply(null, counts) : 0;
+    var minCount = total ? Math.min.apply(null, counts) : 0;
+    var newest = total ? digits[total - 1] : null;
+
+    var maxDigits = [];
+    var minDigits = [];
+    if (total){
+      for (var d2 = 0; d2 < 10; d2++){
+        if (counts[d2] === maxCount) maxDigits.push(d2);
+        if (counts[d2] === minCount) minDigits.push(d2);
+      }
+    }
+
+    for (var d3 = 0; d3 < 10; d3++){
+      var pct = total ? (counts[d3] / total * 100) : 0;
+      var barHeight = maxCount ? (counts[d3] / maxCount * 100) : 0;
+      var entry = digitCols[d3];
+      entry.pct.textContent = pct.toFixed(1) + '%';
+      entry.fill.style.height = barHeight + '%';
+      entry.count.textContent = counts[d3];
+
+      var isMax = total > 0 && maxDigits.indexOf(d3) !== -1 && maxCount !== minCount;
+      var isMin = total > 0 && minDigits.indexOf(d3) !== -1 && maxCount !== minCount;
+      entry.col.classList.toggle('is-max', isMax);
+      entry.col.classList.toggle('is-min', isMin);
+      entry.col.classList.toggle('is-newest', d3 === newest);
+    }
+
+    if (newest !== null){
+      moveCursorTo(newest, !isLiveTick);
+    }
+
+    if (total && maxCount !== minCount){
+      mostIcon.textContent = maxDigits.join(',');
+      mostValue.textContent = maxDigits.map(function(d){return d;}).join(', ') + '  ·  ' + (maxCount / total * 100).toFixed(1) + '%';
+      leastIcon.textContent = minDigits.join(',');
+      leastValue.textContent = minDigits.map(function(d){return d;}).join(', ') + '  ·  ' + (minCount / total * 100).toFixed(1) + '%';
+    } else if (total){
+      mostIcon.textContent = '—';
+      mostValue.textContent = 'even distribution';
+      leastIcon.textContent = '—';
+      leastValue.textContent = 'even distribution';
+    }
+
+    if (isLiveTick && newest !== null){
+      var tag = document.createElement('div');
+      tag.className = 'tape-digit newest';
+      tag.textContent = newest;
+      tapeEl.appendChild(tag);
+      var tapeChildren = tapeEl.children;
+      for (var t = 0; t < tapeChildren.length - 1; t++){
+        tapeChildren[t].classList.remove('newest');
+      }
+      while (tapeEl.children.length > 40){
+        tapeEl.removeChild(tapeEl.firstChild);
+      }
+    } else if (!isLiveTick){
+      tapeEl.innerHTML = '';
+      var tail = digits.slice(-40);
+      for (var k = 0; k < tail.length; k++){
+        var tg = document.createElement('div');
+        tg.className = 'tape-digit' + (k === tail.length - 1 ? ' newest' : '');
+        tg.textContent = tail[k];
+        tapeEl.appendChild(tg);
+      }
+    }
+  }
+
+  symbolSelect.addEventListener('change', function(){
+    if (!symbolsReady) return;
+    currentSymbol = symbolSelect.value;
+    subscribeSymbol(currentSymbol);
+  });
+
+  appIdInput.addEventListener('change', reconnectWithNewCreds);
+  tokenInput.addEventListener('change', reconnectWithNewCreds);
+  function reconnectWithNewCreds(){
+    symbolsReady = false;
+    SYMBOLS = [];
+    symbolPipMap = {};
+    currentSymbol = null;
+    populateDropdown([{code:'', name:'Loading symbols…'}]);
+    symbolNameEl.textContent = 'Loading…';
+    setStatus('connecting', 'reconnecting…');
+    clearTimeout(reconnectTimer);
+    if (ws){
+      ws.onclose = null;
+      try { ws.close(); } catch(e){}
+    }
+    connect();
+  }
+
+  symbolNameEl.textContent = 'Loading…';
+  populateDropdown([{code:'', name:'Loading symbols…'}]);
+  connect();
+})();
+</script>
+</body>
+</html>
