@@ -1,157 +1,208 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Market Adaptive Trading Assistant</title>
+    <title>Adaptive Trading Assistant Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            900: '#134e4a',
+                            dark: '#0B0F17',
+                            card: '#111827',
+                            accent: '#00E5FF'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #080C14; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0B0F17; }
+        ::-webkit-scrollbar-thumb { background: #1F2937; border-radius: 3px; }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+<body class="text-slate-200 min-h-screen flex flex-col justify-between">
 
-    <!-- Header -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800/80 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
         <div class="flex items-center space-x-3">
-            <div class="bg-emerald-500/10 text-emerald-400 p-2.5 rounded-xl border border-emerald-500/20">
-                <i class="fa-solid fa-brain text-xl"></i>
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-400 p-0.5 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                    <i class="fa-solid fa-robot text-cyan-400 text-base"></i>
+                </div>
             </div>
             <div>
-                <h1 class="text-xl font-bold tracking-tight">Adaptive Trading Assistant</h1>
-                <p class="text-xs text-slate-400">Deriv API WebSocket • Multi-Market Cascade & Hedging</p>
+                <h1 class="text-base font-bold text-white tracking-wide uppercase flex items-center space-x-2">
+                    <span>DERIV ADAPTIVE TRADER</span>
+                    <span class="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2 py-0.5 rounded-full font-mono">LIVE WS</span>
+                </h1>
+                <p class="text-xs text-slate-400">Multi-Market Cascade Strategy System</p>
             </div>
         </div>
-        <div class="flex items-center space-x-4">
-            <div id="connection-status" class="flex items-center space-x-2 bg-slate-800 px-3 py-1.5 rounded-full text-xs font-medium border border-slate-700">
-                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" id="status-dot"></span>
-                <span id="status-text">Disconnected</span>
+
+        <!-- Connection Controls -->
+        <div class="flex items-center space-x-3">
+            <button onclick="openSettingsModal()" class="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/50 hover:bg-slate-700/50 text-slate-300 transition-all">
+                <i class="fa-solid fa-gear"></i>
+            </button>
+            <div id="status-pill" class="flex items-center space-x-2 bg-slate-800/80 border border-slate-700/60 px-3.5 py-1.5 rounded-full text-xs font-semibold">
+                <span id="status-dot" class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                <span id="status-text" class="text-slate-300">Disconnected</span>
             </div>
+            <button id="start-btn" onclick="toggleTrading()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs transition-all shadow-lg shadow-emerald-500/20 flex items-center space-x-2">
+                <i class="fa-solid fa-play"></i>
+                <span id="start-btn-text">START TRADING</span>
+            </button>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="flex-1 p-6 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Workspace -->
+    <main class="p-6 max-w-7xl mx-auto w-full space-y-6 flex-1">
         
-        <!-- Left Column: Controls & Configuration -->
-        <div class="space-y-6">
-            <!-- Credentials & Setup Card -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
-                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4 flex items-center">
-                    <i class="fa-solid fa-key mr-2 text-indigo-400"></i> Deriv API Configuration
+        <!-- Top Key Performance Metrics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- Real Account Balance -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between">
+                <div class="flex justify-between items-center text-xs text-slate-400 mb-2">
+                    <span>Deriv Account Balance</span>
+                    <i class="fa-solid fa-wallet text-indigo-400"></i>
+                </div>
+                <div>
+                    <div id="account-balance" class="text-2xl font-bold font-mono text-white">$0.00</div>
+                    <div class="text-[11px] text-slate-500 mt-1" id="account-email">Not Authenticated</div>
+                </div>
+            </div>
+
+            <!-- Session Profit Target Tracker -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between">
+                <div class="flex justify-between items-center text-xs text-slate-400 mb-2">
+                    <span>Session Net Profit</span>
+                    <i class="fa-solid fa-chart-line text-emerald-400"></i>
+                </div>
+                <div>
+                    <div id="session-profit" class="text-2xl font-bold font-mono text-emerald-400">+$0.00</div>
+                    <div class="flex justify-between text-[11px] text-slate-400 mt-2">
+                        <span>Target: $10.00</span>
+                        <span id="target-pct" class="font-mono">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-950 rounded-full h-1.5 mt-1 border border-slate-800 overflow-hidden">
+                        <div id="target-progress-bar" class="bg-emerald-400 h-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Strategy Tracker -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between">
+                <div class="flex justify-between items-center text-xs text-slate-400 mb-2">
+                    <span>Active Strategy</span>
+                    <i class="fa-solid fa-chess-knight text-cyan-400"></i>
+                </div>
+                <div>
+                    <div id="active-strategy" class="text-base font-bold text-white font-mono uppercase">PRIMARY (EVEN/ODD)</div>
+                    <div class="text-[11px] text-slate-400 mt-2 flex justify-between">
+                        <span>Loss Shift Threshold:</span>
+                        <span id="consecutive-losses" class="text-amber-400 font-mono">0 / 2 Losses</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rest Cycle Countdown Alarm -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between">
+                <div class="flex justify-between items-center text-xs text-slate-400 mb-2">
+                    <span>Rest Cycle Alarm</span>
+                    <i class="fa-solid fa-hourglass-half text-purple-400"></i>
+                </div>
+                <div>
+                    <div id="rest-timer" class="text-2xl font-bold font-mono text-purple-300">00:00:00</div>
+                    <div class="text-[11px] text-slate-400 mt-1 flex justify-between">
+                        <span>Status:</span>
+                        <span id="rest-status" class="text-emerald-400 font-medium">Active Trading</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Section: Active Multi-Market Feed & Strategy Logs -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Live Multi-Market Ticker Monitor -->
+            <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 space-y-4">
+                <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                    <span><i class="fa-solid fa-satellite-dish text-cyan-400 mr-2"></i> Active Market Scan</span>
+                    <span id="market-count" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md font-mono">5 Assets</span>
                 </h2>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">App ID (Custom)</label>
-                        <input type="text" id="app-id" value="1089" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">API Token</label>
-                        <input type="password" id="api-token" placeholder="Paste your Deriv API token" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-400 mb-1">Account Type</label>
-                        <select id="account-type" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500">
-                            <option value="demo">Demo Account</option>
-                            <option value="real">Real Account</option>
-                        </select>
-                    </div>
-                    <button id="connect-btn" onclick="toggleConnection()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg text-sm transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-plug"></i>
-                        <span id="connect-btn-text">Connect & Initialize</span>
+
+                <div class="space-y-2.5" id="market-list">
+                    <!-- Dynamic Asset Cards inserted here -->
+                </div>
+            </div>
+
+            <!-- Activity & Trade Execution Log Console -->
+            <div class="lg:col-span-2 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 flex flex-col h-[480px]">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center">
+                        <i class="fa-solid fa-terminal text-purple-400 mr-2"></i> Live Execution Terminal
+                    </h2>
+                    <button onclick="clearConsole()" class="text-[11px] text-slate-500 hover:text-slate-300 transition-colors">Clear Log</button>
+                </div>
+                <div id="log-console" class="flex-1 bg-slate-950/90 border border-slate-800/80 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-y-auto space-y-1.5 shadow-inner">
+                    <div class="text-slate-500">[System] System initialized. Click Settings (gear icon) to configure your App ID and API Token.</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-base font-bold text-white flex items-center">
+                    <i class="fa-solid fa-sliders text-cyan-400 mr-2"></i> API & Risk Settings
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-500 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Custom Deriv App ID</label>
+                    <input type="text" id="app-id-input" value="1089" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm font-mono text-slate-200 focus:outline-none focus:border-cyan-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">API Token</label>
+                    <input type="password" id="api-token-input" placeholder="Paste your Deriv API Token" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm font-mono text-slate-200 focus:outline-none focus:border-cyan-500">
+                </div>
+                <div class="pt-2">
+                    <button onclick="saveAndConnect()" class="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-cyan-500/20">
+                        SAVE & CONNECT WEBSOCKET
                     </button>
                 </div>
             </div>
-
-            <!-- Account & Session Overview -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center">
-                    <i class="fa-solid fa-wallet mr-2 text-emerald-400"></i> Account & Session Balance
-                </h2>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-                        <span class="text-xs text-slate-400">Account Balance</span>
-                        <div id="account-balance" class="text-lg font-bold text-slate-100 mt-1">$0.00</div>
-                    </div>
-                    <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-                        <span class="text-xs text-slate-400">Session Profit</span>
-                        <div id="session-profit" class="text-lg font-bold text-slate-400 mt-1">$0.00 / $10.00</div>
-                    </div>
-                </div>
-                <div class="pt-2">
-                    <div class="flex justify-between text-xs text-slate-400 mb-1">
-                        <span>Target Progress</span>
-                        <span id="progress-pct">0%</span>
-                    </div>
-                    <div class="w-full bg-slate-950 rounded-full h-2 border border-slate-800 overflow-hidden">
-                        <div id="progress-bar" class="bg-emerald-500 h-full w-0 transition-all duration-300"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Rest Cycle & Safety Control -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
-                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center">
-                    <i class="fa-solid fa-shield-halved mr-2 text-rose-400"></i> Rest & Risk Control
-                </h2>
-                <div class="flex items-center justify-between text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
-                    <span class="text-slate-400">Rest Timer Status</span>
-                    <span id="rest-status" class="text-slate-200 font-medium">Inactive</span>
-                </div>
-                <div class="flex items-center justify-between text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
-                    <span class="text-slate-400">Stop-Loss Limit</span>
-                    <span class="text-rose-400 font-medium">-$15.00</span>
-                </div>
-            </div>
         </div>
+    </div>
 
-        <!-- Right / Center Column: Live Markets & Console Logs -->
-        <div class="lg:col-span-2 space-y-6 flex flex-col">
-            <!-- Active Strategy & Market Status -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center space-x-4">
-                    <div class="bg-indigo-500/10 text-indigo-400 p-3 rounded-lg border border-indigo-500/20">
-                        <i class="fa-solid fa-chess-board text-lg"></i>
-                    </div>
-                    <div>
-                        <span class="text-xs text-slate-400">Active Strategy</span>
-                        <div id="active-strategy" class="text-sm font-bold text-slate-200 mt-0.5">STANDBY</div>
-                    </div>
-                </div>
-                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center space-x-4">
-                    <div class="bg-amber-500/10 text-amber-400 p-3 rounded-lg border border-amber-500/20">
-                        <i class="fa-solid fa-chart-line text-lg"></i>
-                    </div>
-                    <div>
-                        <span class="text-xs text-slate-400">Active Market / Asset</span>
-                        <div id="active-market" class="text-sm font-bold text-slate-200 mt-0.5">Scanning...</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Console Log Output -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex-1 flex flex-col min-h-[400px]">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center">
-                        <i class="fa-solid fa-terminal mr-2 text-purple-400"></i> Real-Time Activity Log
-                    </h2>
-                    <button onclick="clearLogs()" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">Clear Log</button>
-                </div>
-                <div id="log-console" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-300 overflow-y-auto max-h-[450px] space-y-1.5">
-                    <div class="text-slate-500">[System] Ready. Enter your custom App ID and API Token, then click Connect.</div>
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- Script Logic -->
     <script>
         let ws = null;
-        let isConnected = false;
+        let isTrading = false;
         let sessionProfit = 0.0;
-        let sessionTarget = 10.00;
+        let targetProfit = 10.0;
         let consecutiveLosses = 0;
-        let currentStrategy = "PRIMARY_MOMENTUM";
+        let activeStrategy = "PRIMARY (EVEN/ODD)";
         let tickHistory = {};
+        
         const assets = [
             { symbol: "R_10", name: "Volatility 10 Index" },
             { symbol: "R_25", name: "Volatility 25 Index" },
@@ -162,105 +213,109 @@
 
         assets.forEach(a => tickHistory[a.symbol] = []);
 
-        function logMessage(msg, type = 'info') {
+        function renderMarketCards() {
+            const container = document.getElementById('market-list');
+            container.innerHTML = assets.map(a => `
+                <div id="card-${a.symbol}" class="bg-slate-950/60 border border-slate-800/80 p-3 rounded-xl flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-semibold text-slate-200">${a.name}</div>
+                        <div class="text-[10px] font-mono text-slate-500">${a.symbol}</div>
+                    </div>
+                    <div class="text-right">
+                        <div id="price-${a.symbol}" class="text-xs font-bold font-mono text-slate-300">--.--</div>
+                        <div id="digit-${a.symbol}" class="text-[10px] font-mono text-cyan-400">Digit: -</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        renderMarketCards();
+
+        function logConsole(msg, type = 'info') {
             const consoleDiv = document.getElementById('log-console');
-            const timeStr = new Date().toLocaleTimeString();
-            let colorClass = 'text-slate-300';
-            if (type === 'success') colorClass = 'text-emerald-400';
-            if (type === 'error') colorClass = 'text-rose-400';
-            if (type === 'warning') colorClass = 'text-amber-400';
-            
-            consoleDiv.innerHTML += `<div class="${colorClass}">[${timeStr}] ${msg}</div>`;
+            const time = new Date().toLocaleTimeString();
+            let color = 'text-slate-300';
+            if (type === 'success') color = 'text-emerald-400';
+            if (type === 'error') color = 'text-rose-400';
+            if (type === 'warn') color = 'text-amber-400';
+            if (type === 'trade') color = 'text-cyan-400';
+
+            consoleDiv.innerHTML += `<div class="${color}"><span class="text-slate-600">[${time}]</span> ${msg}</div>`;
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
         }
 
-        function clearLogs() {
+        function clearConsole() {
             document.getElementById('log-console').innerHTML = '';
         }
 
-        function toggleConnection() {
-            if (isConnected) {
-                if (ws) ws.close();
-                setDisconnectedState();
-                logMessage("Disconnected manually.", "warning");
+        function openSettingsModal() { document.getElementById('settings-modal').classList.remove('hidden'); }
+        function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
+
+        function saveAndConnect() {
+            closeSettingsModal();
+            connectWebSocket();
+        }
+
+        function connectWebSocket() {
+            const appId = document.getElementById('app-id-input').value.trim();
+            const token = document.getElementById('api-token-input').value.trim();
+
+            if (!token) {
+                logConsole("Error: Please enter your API Token in Settings.", "error");
+                openSettingsModal();
                 return;
             }
 
-            const appId = document.getElementById('app-id').value.trim();
-            const token = document.getElementById('api-token').value.trim();
-
-            if (!appId || !token) {
-                alert("Please provide both your custom App ID and API Token.");
-                return;
-            }
-
-            logMessage("Connecting to Deriv WebSocket...");
-            const wsUrl = `wss://ws.derivws.com/websockets/v3?app_id=${appId}`;
-            
-            ws = new WebSocket(wsUrl);
+            logConsole(`Connecting to Deriv WebSocket (App ID: ${appId})...`);
+            ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${appId}`);
 
             ws.onopen = () => {
-                logMessage("WebSocket connected. Authorizing account...", "info");
+                logConsole("WebSocket connected. Authenticating...", "info");
                 ws.send(JSON.stringify({ authorize: token }));
             };
 
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                handleWebSocketMessage(data);
+            ws.onmessage = (evt) => {
+                const data = JSON.parse(evt.data);
+                handleMessage(data);
             };
 
-            ws.onerror = (error) => {
-                logMessage("WebSocket error encountered.", "error");
-            };
-
+            ws.onerror = () => logConsole("WebSocket Connection Error", "error");
             ws.onclose = () => {
-                setDisconnectedState();
-                logMessage("WebSocket connection closed.", "warning");
+                logConsole("WebSocket Disconnected.", "warn");
+                updateConnectionUI(false);
             };
         }
 
-        function setConnectedState(email) {
-            isConnected = true;
-            document.getElementById('status-dot').className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-none";
-            document.getElementById('status-text').innerText = `Connected (${email})`;
-            document.getElementById('connect-btn').className = "w-full bg-rose-600 hover:bg-rose-500 text-white font-medium py-2.5 rounded-lg text-sm transition-all shadow-lg shadow-rose-600/20 flex items-center justify-center space-x-2";
-            document.getElementById('connect-btn-text').innerText = "Disconnect";
+        function updateConnectionUI(connected, email = "") {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            if (connected) {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-lg shadow-emerald-500/50";
+                text.innerText = `Connected (${email})`;
+            } else {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse";
+                text.innerText = "Disconnected";
+            }
         }
 
-        function setDisconnectedState() {
-            isConnected = false;
-            document.getElementById('status-dot').className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse";
-            document.getElementById('status-text').innerText = "Disconnected";
-            document.getElementById('connect-btn').className = "w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg text-sm transition-all shadow-lg shadow-indigo-600/20 flex items-center justify-center space-x-2";
-            document.getElementById('connect-btn-text').innerText = "Connect & Initialize";
-            document.getElementById('account-balance').innerText = "$0.00";
-        }
-
-        function handleWebSocketMessage(data) {
+        function handleMessage(data) {
             const msgType = data.msg_type;
 
             if (msgType === 'authorize') {
                 if (data.error) {
-                    logMessage(`Authorization Failed: ${data.error.message}`, "error");
-                    ws.close();
+                    logConsole(`Authorization Failed: ${data.error.message}`, "error");
                 } else {
-                    logMessage(`Successfully authorized as: ${data.authorize.email}`, "success");
-                    setConnectedState(data.authorize.email);
+                    logConsole(`Authorized Account: ${data.authorize.email}`, "success");
+                    document.getElementById('account-email').innerText = data.authorize.email;
+                    updateConnectionUI(true, data.authorize.email);
 
-                    // Subscribe to real-time balance
+                    // Subscribe to account balance & tick streams
                     ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
-
-                    // Subscribe to tick streams for all assets
-                    assets.forEach(asset => {
-                        ws.send(JSON.stringify({ ticks: asset.symbol }));
-                        logMessage(`Subscribed to tick stream: ${asset.name}`);
-                    });
+                    assets.forEach(a => ws.send(JSON.stringify({ ticks: a.symbol })));
                 }
             } else if (msgType === 'balance') {
                 if (data.balance) {
-                    const balanceAmt = parseFloat(data.balance.balance);
-                    const currency = data.balance.currency || 'USD';
-                    document.getElementById('account-balance').innerText = `${balanceAmt.toFixed(2)} ${currency}`;
+                    const bal = parseFloat(data.balance.balance);
+                    document.getElementById('account-balance').innerText = `$${bal.toFixed(2)}`;
                 }
             } else if (msgType === 'tick') {
                 processTick(data.tick);
@@ -269,18 +324,18 @@
                 if (poc && poc.is_sold) {
                     const profit = poc.profit || 0.0;
                     sessionProfit += profit;
-                    updateSessionUI();
+                    updateSessionMetrics();
 
                     if (profit >= 0) {
-                        logMessage(`Contract Won! P/L: +$${profit.toFixed(2)}`, "success");
+                        logConsole(`TRADE WON: +$${profit.toFixed(2)}`, "success");
                         consecutiveLosses = 0;
                     } else {
-                        logMessage(`Contract Lost! P/L: -$${Math.abs(profit).toFixed(2)}`, "error");
+                        logConsole(`TRADE LOST: -$${Math.abs(profit).toFixed(2)}`, "error");
                         consecutiveLosses++;
                     }
 
-                    if (sessionProfit >= sessionTarget) {
-                        logMessage("Session Profit Target ($10.00) reached! Initiating 1-hour rest cycle...", "success");
+                    if (sessionProfit >= targetProfit) {
+                        logConsole("Session Target ($10.00) Reached! Banking profits & starting 1-hr rest cycle...", "success");
                         triggerRestPeriod();
                     }
                 }
@@ -290,42 +345,52 @@
         function processTick(tick) {
             const symbol = tick.symbol;
             const quote = tick.quote;
-            const assetObj = assets.find(a => a.symbol === symbol);
+            const lastDigit = parseInt(String(quote).slice(-1));
+
+            // Update UI Market Ticker
+            const priceEl = document.getElementById(`price-${symbol}`);
+            const digitEl = document.getElementById(`digit-${symbol}`);
+            if (priceEl) priceEl.innerText = quote.toFixed(2);
+            if (digitEl) digitEl.innerText = `Digit: ${lastDigit}`;
 
             if (!tickHistory[symbol]) tickHistory[symbol] = [];
             tickHistory[symbol].push(quote);
             if (tickHistory[symbol].length > 50) tickHistory[symbol].shift();
 
-            document.getElementById('active-market').innerText = assetObj ? assetObj.name : symbol;
-            document.getElementById('active-strategy').innerText = currentStrategy;
-
-            evaluateStrategies(symbol, tickHistory[symbol]);
+            if (isTrading) {
+                evaluateCascadeStrategy(symbol, tickHistory[symbol], lastDigit);
+            }
         }
 
-        function evaluateStrategies(symbol, ticks) {
+        function evaluateCascadeStrategy(symbol, ticks, lastDigit) {
             if (ticks.length < 5) return;
 
-            // Hedging Check (Digits 4 or 5)
-            const lastDigit = parseInt(String(ticks[ticks.length - 1]).slice(-1));
+            // 1. Hedging Check (Digit 4 or 5)
             if (lastDigit === 4 || lastDigit === 5) {
-                currentStrategy = "HEDGING (Under 4 & Over 5)";
-                executeTradePair(symbol);
+                activeStrategy = "HEDGING (Under 4 & Over 5)";
+                document.getElementById('active-strategy').innerText = activeStrategy;
+                executeHedgePair(symbol);
                 return;
             }
 
-            // Primary Momentum Check
-            if (currentStrategy.includes("PRIMARY") || currentStrategy.includes("STANDBY")) {
-                currentStrategy = "PRIMARY_MOMENTUM";
+            // 2. Cascade Strategies
+            if (activeStrategy.includes("PRIMARY")) {
                 const last5 = ticks.slice(-5).map(t => parseInt(String(t).slice(-1)));
                 if (last5.every(d => d % 2 === 0)) {
-                    placeTrade(symbol, "DIGITODD", null, 1.0);
+                    placeContract(symbol, "DIGITODD", null, 1.0);
                 } else if (last5.every(d => d % 2 !== 0)) {
-                    placeTrade(symbol, "DIGITEVEN", null, 1.0);
+                    placeContract(symbol, "DIGITEVEN", null, 1.0);
+                }
+
+                if (consecutiveLosses >= 2) {
+                    activeStrategy = "FIRST FALLBACK (DIFFERS)";
+                    document.getElementById('active-strategy').innerText = activeStrategy;
+                    consecutiveLosses = 0;
                 }
             }
         }
 
-        function placeTrade(symbol, contractType, barrier, stake) {
+        function placeContract(symbol, contractType, barrier, stake) {
             const req = {
                 buy: 1,
                 price: stake,
@@ -340,33 +405,60 @@
                 }
             };
             if (barrier !== null) req.parameters.barrier = String(barrier);
-
             ws.send(JSON.stringify(req));
-            logMessage(`Placed ${contractType} on ${symbol} | Stake: $${stake}`);
+            logConsole(`CONTRACT BUY: ${contractType} on ${symbol} ($${stake})`, "trade");
         }
 
-        function executeTradePair(symbol) {
-            // Hedging: Under 4 and Over 5 simultaneously
-            placeTrade(symbol, "DIGITUNDER", "4", 2.0);
-            placeTrade(symbol, "DIGITOVER", "5", 2.0);
-            logMessage(`HEDGED: Under 4 and Over 5 executed on ${symbol} ($2 each)`, "warning");
+        function executeHedgePair(symbol) {
+            placeContract(symbol, "DIGITUNDER", "4", 2.0);
+            placeContract(symbol, "DIGITOVER", "5", 2.0);
+            logConsole(`HEDGE TRIGGERED on ${symbol}: Simultaneously bought Under 4 & Over 5`, "warn");
         }
 
-        function updateSessionUI() {
-            document.getElementById('session-profit').innerText = `$${sessionProfit.toFixed(2)} / $10.00`;
-            const pct = Math.min(100, Math.max(0, (sessionProfit / sessionTarget) * 100));
-            document.getElementById('progress-bar').style.width = `${pct}%`;
-            document.getElementById('progress-pct').innerText = `${pct.toFixed(0)}%`;
+        function toggleTrading() {
+            isTrading = !isTrading;
+            const btn = document.getElementById('start-btn');
+            const txt = document.getElementById('start-btn-text');
+            if (isTrading) {
+                btn.className = "bg-rose-500 hover:bg-rose-400 text-white font-bold px-5 py-2 rounded-xl text-xs transition-all shadow-lg shadow-rose-500/20 flex items-center space-x-2";
+                txt.innerText = "PAUSE TRADING";
+                logConsole("Automated trading active.", "success");
+            } else {
+                btn.className = "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs transition-all shadow-lg shadow-emerald-500/20 flex items-center space-x-2";
+                txt.innerText = "START TRADING";
+                logConsole("Trading paused.", "warn");
+            }
+        }
+
+        function updateSessionMetrics() {
+            document.getElementById('session-profit').innerText = `${sessionProfit >= 0 ? '+' : ''}$${sessionProfit.toFixed(2)}`;
+            const pct = Math.min(100, Math.max(0, (sessionProfit / targetProfit) * 100));
+            document.getElementById('target-progress-bar').style.width = `${pct}%`;
+            document.getElementById('target-pct').innerText = `${pct.toFixed(0)}%`;
+            document.getElementById('consecutive-losses').innerText = `${consecutiveLosses} / 2 Losses`;
         }
 
         function triggerRestPeriod() {
+            isTrading = false;
             document.getElementById('rest-status').innerText = "Resting (1 Hour)";
             sessionProfit = 0.0;
-            updateSessionUI();
-            setTimeout(() => {
-                document.getElementById('rest-status').innerText = "Inactive";
-                logMessage("Rest period complete. Starting fresh session.", "success");
-            }, 3600000);
+            updateSessionMetrics();
+
+            let timeLeft = 3600;
+            const timer = setInterval(() => {
+                timeLeft--;
+                const hrs = String(Math.floor(timeLeft / 3600)).padStart(2, '0');
+                const mins = String(Math.floor((timeLeft % 3600) / 60)).padStart(2, '0');
+                const secs = String(timeLeft % 60).padStart(2, '0');
+                document.getElementById('rest-timer').innerText = `${hrs}:${mins}:${secs}`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    document.getElementById('rest-status').innerText = "Active Trading";
+                    isTrading = true;
+                    logConsole("Rest period complete! Session restarted.", "success");
+                }
+            }, 1000);
         }
     </script>
 </body>
